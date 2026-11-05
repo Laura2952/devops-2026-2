@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 
 const { pgQuery, mongoInsertOne, redisHGetAll, redisHSet, redisPing } = vi.hoisted(() => ({
@@ -35,12 +35,26 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("API endpoints", () => {
   it("GET /health responde ok", async () => {
     const res = await request(app).get("/health");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ status: "ok", service: "express-ts-api" });
+  });
+
+  it("registra en la terminal el tiempo de cada ruta", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await request(app).get("/health?source=test");
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^\[route-timing\] GET \/health \| 200 \| \d+\.\d{2} ms$/),
+    );
   });
 
   it("GET /api/postgres/users devuelve la lista de usuarios", async () => {

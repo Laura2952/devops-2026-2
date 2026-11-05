@@ -10,28 +10,71 @@ API en Node.js con Express y TypeScript que expone endpoints contra PostgreSQL y
 
 ## Configuración
 
-1. Copia el archivo de entorno:
+Antes de ejecutar los comandos, entra a la carpeta del proyecto (la que contiene `package.json`). Si estás en la carpeta contenedora `devops-2026-2`, ejecuta:
 
-```bash
-cp .env.example .env
+```powershell
+cd .\devops-2026-2
+```
+
+Confirma que estás en la carpeta correcta:
+
+```powershell
+Get-ChildItem package.json
+```
+
+1. Copia el archivo de entorno si vas a ejecutar la API localmente:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 2. Ajusta credenciales en `.env` si hace falta.
 
 ## Arranque con Docker (API + Postgres + MongoDB + Redis)
 
-Levanta todo el stack:
+Desde la carpeta del proyecto (donde está `package.json`), levanta todo el stack:
 
-```bash
+```powershell
 npm run docker:up
 ```
 
-API en `http://localhost:3000`. Logs y parada:
+Si Docker informa que el puerto `6379` ya está ocupado, asigna otro puerto del equipo para Redis y vuelve a levantar el stack:
+
+```powershell
+$env:REDIS_PORT = "6380"
+npm run docker:up
+```
+
+Este proyecto publica Redis en el puerto `6380` del equipo y lo sigue usando en el puerto `6379` dentro de Docker. Así se evita el conflicto con otro servicio local que ya use `6379`. La API queda disponible en `http://localhost:3000`.
+
+En otra terminal, ubicada también en la carpeta del proyecto, consulta los logs de la API:
+
+```powershell
+npm run docker:logs
+```
+
+Cuando veas `Server running on http://localhost:3000`, en una tercera terminal envía solicitudes para medir:
+
+```powershell
+curl.exe http://localhost:3000/health
+curl.exe http://localhost:3000/api/mongo/health
+```
+
+La respuesta HTTP se muestra en la tercera terminal y la medición se imprime en la terminal de logs, por ejemplo:
+
+```text
+[route-timing] GET /health | 200 | 7.11 ms
+```
+
+`200` indica que la solicitud fue exitosa; `7.11 ms` es el tiempo transcurrido desde que Express recibió la solicitud hasta que terminó de enviar la respuesta. El valor observado puede variar entre solicitudes y no es una medición de carga o rendimiento sostenido.
+
+Para detener los contenedores (desde la carpeta del proyecto):
 
 ```bash
-npm run docker:logs
 npm run docker:down
 ```
+
+Cada solicitud que llega a la API imprime el método, la ruta, el código HTTP y el tiempo de respuesta en milisegundos. Para instrucciones de medición de rutas y de conexiones/operaciones de PostgreSQL, MongoDB y Redis, consulta [src/middleware/README.md](./src/middleware/README.md). El benchmark de bases de datos se ejecuta con `npm run db:benchmark` desde la carpeta del proyecto.
 
 Ejecutar las pruebas localmente:
 
@@ -46,6 +89,8 @@ docker compose up -d postgres mongo redis
 ```
 
 ## Instalación y arranque local
+
+Desde la carpeta del proyecto, instala dependencias (solo la primera vez) y arranca la API:
 
 ```bash
 npm install

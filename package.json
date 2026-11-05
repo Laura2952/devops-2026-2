@@ -8,6 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "db:benchmark": "tsx src/middleware/db-timing.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "docker:up": "docker compose up --build -d",
